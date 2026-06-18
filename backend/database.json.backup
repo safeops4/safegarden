@@ -1,0 +1,85 @@
+{
+  "users": [
+    {
+      "email": "admin@safeguardian.ci",
+      "password": "password",
+      "name": "Admin Safe"
+    }
+  ],
+  "alerts": [
+    {
+      "id": "alert-1",
+      "user": "Bracelet SG001",
+      "location": "Abidjan, Cocody (5.3484, -3.9774)",
+      "status": "URGENT",
+      "date": "2026-06-15T10:30:46.683Z",
+      "message": "Bouton physique SOS activé"
+    },
+    {
+      "id": "alert-2",
+      "user": "Bracelet SG001",
+      "location": "Abidjan, Plateau (5.3248, -4.0191)",
+      "status": "RÉSOLU",
+      "date": "2026-06-15T09:30:46.684Z",
+      "message": "Alerte de test"
+    }
+  ],
+  "lostItems": [
+    {
+      "id": "item-1",
+      "name": "iPhone 13 Pro",
+      "description": "Perdu près du centre commercial Playce, couleur bleu",
+      "status": "En recherche",
+      "date": "2026-06-15T11:30:46.684Z"
+    },
+    {
+      "id": "item-2",
+      "name": "Clés de voiture",
+      "description": "Trousseau de clés de marque Toyota avec porte-clés rouge",
+      "status": "Retrouvé",
+      "date": "2026-06-15T11:30:46.684Z"
+    }
+  ],
+  "lostDocuments": [
+    {
+      "id": "doc-1",
+      "type": "CNI",
+      "ownerName": "Koffi Amenan",
+      "number": "CI00129837",
+      "status": "En attente",
+      "date": "2026-06-15T11:30:46.684Z"
+    },
+    {
+      "id": "doc-2",
+      "type": "Passeport",
+      "ownerName": "Kouadio Jean",
+      "number": "18AB98374",
+      "status": "Vérifié",
+      "date": "2026-06-15T11:30:46.684Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "contact-1",
+      "name": "Koffi Koffi (Père)",
+      "phone": "+225 0707070707",
+      "email": "koffi@mail.com",
+      "relation": "Famille"
+    },
+    {
+      "id": "contact-2",
+      "name": "Gendarmerie Nationale",
+      "phone": "111",
+      "email": "emergency@gendarmerie.ci",
+      "relation": "Secours"
+    }
+  ],
+  "device": {
+    "id": "SG001",
+    "status": "Connecté",
+    "battery": 89,
+    "latitude": 5.349349996948242,
+    "longitude": -3.97715,
+    "lastSync": "2026-06-15T12:04:18.079Z"
+  }
+}

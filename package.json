@@ -1,0 +1,9 @@
+{
+  "name": "safeguardian-root",
+  "version": "1.0.0",
+  "description": "Root workspace for SafeGuardian CI",
+  "scripts": {
+    "dev": "npm run dev --prefix backend & npm run dev --prefix frontend",
+    "install-all": "npm install --prefix backend && npm install --prefix frontend"
+  }
+}
