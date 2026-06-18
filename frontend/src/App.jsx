@@ -28,9 +28,14 @@ function AppContent() {
 
   // Load user session from localStorage
   useEffect(() => {
-    const savedUser = localStorage.getItem("safeguardian_user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    try {
+      const savedUser = localStorage.getItem("safeguardian_user");
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (e) {
+      localStorage.removeItem("safeguardian_user");
+      localStorage.removeItem("safeguardian_token");
     }
     setLoading(false);
   }, []);
