@@ -22,6 +22,7 @@ COPY backend/ ./
 COPY --from=frontend-build /frontend/dist /app/public
 
 ENV SERVE_STATIC=true
+ENV STATIC_DIR=/app/public
 ENV PORT=5000
 
 EXPOSE 5000

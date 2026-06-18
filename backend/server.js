@@ -31,12 +31,13 @@ app.use("/api/contacts", contactRoutes);
 app.use("/api/device", deviceRoutes);
 
 // Serve frontend static files in production
-const frontendDist = path.join(__dirname, "..", "frontend", "dist");
-if (process.env.SERVE_STATIC === "true" && fs.existsSync(frontendDist)) {
-  app.use(express.static(frontendDist));
+const staticDir = process.env.STATIC_DIR || path.join(__dirname, "..", "frontend", "dist");
+if (process.env.SERVE_STATIC === "true" && fs.existsSync(staticDir)) {
+  console.log(`[STATIC] Serving frontend from ${staticDir}`);
+  app.use(express.static(staticDir));
   app.get("*", (req, res) => {
     if (!req.path.startsWith("/api")) {
-      res.sendFile(path.join(frontendDist, "index.html"));
+      res.sendFile(path.join(staticDir, "index.html"));
     }
   });
 }
