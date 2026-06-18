@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { api } from "../api";
 import { 
   AlertTriangle, 
   Smartphone, 
@@ -21,13 +22,13 @@ export default function Dashboard({ alerts, device, onResolveAlert, onUpdateCoor
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const itemsRes = await fetch("http://localhost:5000/api/lost-items");
+        const itemsRes = await api("/lost-items");
         if (itemsRes.ok) {
           const items = await itemsRes.json();
           setLostItemsCount(items.length);
         }
         
-        const docsRes = await fetch("http://localhost:5000/api/lost-documents");
+        const docsRes = await api("/lost-documents");
         if (docsRes.ok) {
           const docs = await docsRes.json();
           setLostDocsCount(docs.length);
