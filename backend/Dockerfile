@@ -4,10 +4,10 @@ WORKDIR /app
 
 RUN mkdir -p /app/data
 
-COPY backend/package*.json ./
+COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY backend/ ./
+COPY . .
 
 EXPOSE 5000
 
