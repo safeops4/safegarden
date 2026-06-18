@@ -2,12 +2,25 @@ const { getDB, saveDB } = require("../database");
 const bcrypt = require("bcryptjs");
 
 const UserModel = {
-  create(email, password, name) {
+  create(email, password, name, phone, city) {
     const db = getDB();
     const hash = bcrypt.hashSync(password, 10);
-    db.run("INSERT INTO users (email, password, name) VALUES (?, ?, ?)", [email, hash, name]);
+    db.run("INSERT INTO users (email, password, name, phone, city) VALUES (?, ?, ?, ?, ?)", [email, hash, name, phone || "", city || ""]);
     saveDB();
-    return { email, name };
+    return this.findByEmail(email);
+  },
+
+  findById(id) {
+    const db = getDB();
+    const stmt = db.prepare("SELECT id, email, name, phone, city FROM users WHERE id = ?");
+    stmt.bind([id]);
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      return row;
+    }
+    stmt.free();
+    return null;
   },
 
   findByEmail(email) {

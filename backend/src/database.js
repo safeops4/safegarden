@@ -22,9 +22,32 @@ async function initDatabase() {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       name TEXT NOT NULL,
+      phone TEXT DEFAULT '',
+      city TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS esp32_devices (
+      id TEXT PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      name TEXT DEFAULT 'Bracelet ESP32',
+      pairing_code TEXT,
+      paired_at TEXT DEFAULT (datetime('now')),
+      last_seen TEXT,
+      battery INTEGER DEFAULT 100,
+      firmware_version TEXT DEFAULT '1.0',
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+
+  try { db.run("ALTER TABLE alerts ADD COLUMN escalation_level INTEGER DEFAULT 0"); } catch(e) {}
+  try { db.run("ALTER TABLE alerts ADD COLUMN escalation_stage TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE alerts ADD COLUMN user_id INTEGER DEFAULT 0"); } catch(e) {}
+  try { db.run("ALTER TABLE alerts ADD COLUMN esp32_id TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE users ADD COLUMN phone TEXT DEFAULT ''"); } catch(e) {}
+  try { db.run("ALTER TABLE users ADD COLUMN city TEXT DEFAULT ''"); } catch(e) {}
 
   db.run(`
     CREATE TABLE IF NOT EXISTS alerts (

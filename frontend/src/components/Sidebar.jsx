@@ -4,6 +4,7 @@ import {
   LayoutDashboard, 
   AlertTriangle, 
   Smartphone, 
+  Wifi,
   Package, 
   FileText, 
   Users,
@@ -16,6 +17,7 @@ export default function Sidebar() {
     { name: "Tableau de Bord", path: "/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "Alertes SOS", path: "/alerts", icon: <AlertTriangle size={20} /> },
     { name: "Bracelet Connecté", path: "/device", icon: <Smartphone size={20} /> },
+    { name: "Appairage ESP32", path: "/esp32", icon: <Wifi size={20} /> },
     { name: "Objets Perdus", path: "/lost-items", icon: <Package size={20} /> },
     { name: "Documents Perdus", path: "/lost-documents", icon: <FileText size={20} /> },
     { name: "Contacts Urgence", path: "/contacts", icon: <Users size={20} /> }

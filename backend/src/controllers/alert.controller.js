@@ -1,33 +1,79 @@
 const AlertModel = require("../models/alert.model");
 const ContactModel = require("../models/contact.model");
+const Esp32Model = require("../models/esp32.model");
+const UserModel = require("../models/user.model");
 const DeviceModel = require("../models/device.model");
 const NotificationService = require("../services/notification.service");
 
-function scheduleEscalation(alertId) {
-  console.log(`[ESCALATION TIMER] Démarrage 3 min pour alerte: ${alertId}`);
+const escalationTimers = {};
 
-  setTimeout(() => {
+function scheduleEscalation(alertId, esp32Id) {
+  console.log(`[ESCALATION] Alerte ${alertId} confirmée. Phases: Police(0s) → Pompiers(60s) → Forces spéciales+contacts(180s)`);
+
+  AlertModel.updateStage(alertId, "POLICE_NOTIFIED", "Police nationale notifiée");
+
+  const timers = [];
+
+  const t1 = setTimeout(() => {
     const alert = AlertModel.getById(alertId);
-    if (alert && alert.status === "URGENT") {
+    if (alert && alert.status !== "RÉSOLU") {
+      AlertModel.updateStage(alertId, "POMPIERS_NOTIFIED", "⚠️ Escalade 1min - Pompiers notifiés");
+      DeviceModel.update({ status: "ALERTE ESCALADÉE" });
+      console.log(`[ESCALATION 1min] ${alertId} → Pompiers`);
+    } else {
+      console.log(`[ESCALATION 1min] ${alertId} résolue, pompiers non notifiés.`);
+    }
+  }, 60000);
+  timers.push(t1);
+
+  const t2 = setTimeout(async () => {
+    const alert = AlertModel.getById(alertId);
+    if (alert && alert.status !== "RÉSOLU") {
       const contacts = ContactModel.getAll();
       const contactsStr = contacts.length > 0
         ? contacts.map(c => `${c.name} (${c.phone})`).join(", ")
-        : "Aucun contact d'urgence configuré";
+        : "Aucun contact d'urgence";
+      AlertModel.updateStage(alertId, "FORCES_CONTACTS_NOTIFIED",
+        `⚠️ ESCALADE 3min - Forces spéciales + Contacts [${contactsStr}]`);
+      DeviceModel.update({ status: "ALERTE MAJEURE" });
 
-      AlertModel.escalate(alertId, {
-        time: new Date().toISOString(),
-        appendMessage: ` | ⚠️ ESCALADE (3 MIN SANS RÉPONSE) : Contacts alertés : [${contactsStr}]`
-      });
+      if (contacts.length > 0) {
+        await NotificationService.notifyEmergencyContacts(contacts, alert);
+      }
 
-      DeviceModel.update({ status: "ALERTE ESCALADÉE" });
+      if (esp32Id) {
+        const esp32 = Esp32Model.findById(esp32Id);
+        if (esp32) {
+          const user = UserModel.findById(esp32.user_id);
+          if (user && user.phone) {
+            await NotificationService.sendSMS(user.phone,
+              `URGENT SafeGuardian: Alerte SOS confirmée depuis ${esp32.name}. Secours déployés.`);
+          }
+          if (user && user.email) {
+            await NotificationService.sendEmail(user.email,
+              "Confirmation déploiement secours SafeGuardian",
+              `Votre alerte SOS via ${esp32.name} a déclenché tous les niveaux de secours.`);
+          }
+        }
+      }
 
-      NotificationService.notifyEmergencyContacts(contacts, alert);
-
-      console.log(`[ESCALATION TRIGGERED] Alerte ${alertId} escaladée.`);
+      console.log(`[ESCALATION 3min] ${alertId} → Forces spéciales + contacts`);
     } else {
-      console.log(`[ESCALATION CANCELLED] Alerte ${alertId} résolue à temps.`);
+      console.log(`[ESCALATION 3min] ${alertId} résolue, escalation 3min annulée.`);
     }
   }, 180000);
+  timers.push(t2);
+
+  escalationTimers[alertId] = timers;
+}
+
+function cancelEscalation(alertId) {
+  const timers = escalationTimers[alertId];
+  if (timers) {
+    timers.forEach(t => clearTimeout(t));
+    delete escalationTimers[alertId];
+    console.log(`[ESCALATION CANCELLED] Tous les timers pour ${alertId} annulés.`);
+  }
 }
 
 const AlertController = {
@@ -64,6 +110,8 @@ const AlertController = {
     }
 
     AlertModel.resolve(id);
+    cancelEscalation(id);
+
     const activeUrgent = AlertModel.getActiveUrgentCount();
     if (activeUrgent === 0) {
       DeviceModel.update({ status: "Connecté" });
@@ -74,4 +122,4 @@ const AlertController = {
   }
 };
 
-module.exports = { AlertController, scheduleEscalation };
+module.exports = { AlertController, scheduleEscalation, cancelEscalation };
