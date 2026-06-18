@@ -1,5 +1,8 @@
 FROM node:20-alpine AS frontend-build
 
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+
 WORKDIR /frontend
 
 COPY frontend/package*.json ./
