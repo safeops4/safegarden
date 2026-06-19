@@ -1,7 +1,5 @@
 const AlertModel = require("../models/alert.model");
 const ContactModel = require("../models/contact.model");
-const Esp32Model = require("../models/esp32.model");
-const UserModel = require("../models/user.model");
 const DeviceModel = require("../models/device.model");
 const NotificationService = require("../services/notification.service");
 
@@ -42,18 +40,9 @@ function scheduleEscalation(alertId, esp32Id) {
       }
 
       if (esp32Id) {
-        const esp32 = Esp32Model.findById(esp32Id);
-        if (esp32) {
-          const user = UserModel.findById(esp32.user_id);
-          if (user && user.phone) {
-            await NotificationService.sendSMS(user.phone,
-              `URGENT SafeGuardian: Alerte SOS confirmée depuis ${esp32.name}. Secours déployés.`);
-          }
-          if (user && user.email) {
-            await NotificationService.sendEmail(user.email,
-              "Confirmation déploiement secours SafeGuardian",
-              `Votre alerte SOS via ${esp32.name} a déclenché tous les niveaux de secours.`);
-          }
+        const device = DeviceModel.get();
+        if (device) {
+          console.log(`[NOTIFY] Alerte ${alertId} - Notification utilisateur du bracelet ${esp32Id}`);
         }
       }
 

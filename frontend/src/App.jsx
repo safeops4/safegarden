@@ -13,7 +13,6 @@ import Device from "./pages/Device";
 import LostItems from "./pages/LostItems";
 import LostDocuments from "./pages/LostDocuments";
 import Contacts from "./pages/Contacts";
-import Esp32Pairing from "./pages/Esp32Pairing";
 
 import { api, API_BASE_URL } from "./api";
 
@@ -233,7 +232,6 @@ function AppContent() {
               fetchData={fetchData}
             />
           } />
-          <Route path="/esp32" element={<Esp32Pairing />} />
           <Route path="/lost-items" element={<LostItems apiBaseUrl={API_BASE_URL} />} />
           <Route path="/lost-documents" element={<LostDocuments apiBaseUrl={API_BASE_URL} />} />
           <Route path="/contacts" element={<Contacts apiBaseUrl={API_BASE_URL} />} />

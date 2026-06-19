@@ -110,54 +110,44 @@ describe("Protected Endpoints", () => {
 });
 
 describe("ESP32 Endpoint", () => {
-  test("POST /api/esp32/button-down + button-up + confirm-sos", async () => {
-    const esp32Id = "ESP32-TEST-001";
-
-    const pingRes = await request(app)
-      .post("/api/esp32/button-down")
-      .send({ esp32Id });
-    expect(pingRes.status).toBe(404);
-    expect(pingRes.body.success).toBe(false);
-
-    const pairRes = await request(app)
-      .post("/api/esp32/pair")
-      .send({ pairingCode: "TESTCODE", esp32Id });
-    expect(pairRes.status).toBe(404);
-
-    const authRes = await request(app)
-      .post("/api/register")
-      .send({ email: `esp32-user-${Date.now()}@test.ci`, password: "test1234", name: "Test ESP32 User" });
-    expect(authRes.status).toBe(200);
-    const userId = authRes.body.user.id;
-
-    const db = require("../src/database");
-    const dbInstance = db.getDB();
-    dbInstance.run("INSERT INTO esp32_devices (id, user_id, name, pairing_code, paired_at, last_seen) VALUES (?, ?, ?, '', datetime('now'), datetime('now'))", [esp32Id, userId, "Test Bracelet"]);
-    db.saveDB();
+  test("POST /api/esp32/button-down + button-up + confirm-sos + legacy", async () => {
+    const deviceId = "SG001";
 
     const downRes = await request(app)
       .post("/api/esp32/button-down")
-      .send({ esp32Id });
+      .send({ deviceId });
     expect(downRes.status).toBe(200);
     expect(downRes.body.success).toBe(true);
     expect(downRes.body.alertId).toBeDefined();
 
     const upRes = await request(app)
       .post("/api/esp32/button-up")
-      .send({ esp32Id });
+      .send({ deviceId });
     expect(upRes.status).toBe(200);
     expect(upRes.body.confirmed).toBe(false);
 
     const downRes2 = await request(app)
       .post("/api/esp32/button-down")
-      .send({ esp32Id });
+      .send({ deviceId });
     expect(downRes2.status).toBe(200);
 
     const confirmRes = await request(app)
       .post("/api/esp32/confirm-sos")
-      .send({ esp32Id });
+      .send({ deviceId });
     expect(confirmRes.status).toBe(200);
     expect(confirmRes.body.success).toBe(true);
+
+    const legacyRes = await request(app)
+      .post("/api/esp32/button")
+      .send({ user: "Test Bracelet", message: "Test SOS" });
+    expect(legacyRes.status).toBe(200);
+    expect(legacyRes.body.success).toBe(true);
+
+    const heartbeatRes = await request(app)
+      .post("/api/esp32/heartbeat")
+      .send({ deviceId, battery: 85 });
+    expect(heartbeatRes.status).toBe(200);
+    expect(heartbeatRes.body.success).toBe(true);
   });
 });
 
