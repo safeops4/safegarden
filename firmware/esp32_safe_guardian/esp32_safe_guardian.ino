@@ -2,102 +2,97 @@
  * SafeGuardian CI - Firmware ESP32
  * Bracelet connecté avec bouton SOS + LED
  * 
- * Matériel :
- *   - ESP32 (WROOM, etc.)
- *   - 1x Bouton poussoir (GPIO 13 → GND)
- *   - 1x LED (GPIO 12 → GND avec résistance 220Ω)
- *   - Alimentation : batterie LiPo + chargeur TP4056
- * 
- * Connexion :
- *   - WiFi → Internet → SafeGuardian API
- *   - Bouton maintenu 3s → Alerte SOS
- *   - LED clignote 3x/secondes pendant le countdown
+ * GPIO 13 → Bouton (Pullup interne, ferme vers GND)
+ * GPIO 12 → LED (anode → 220Ω → GND)
+ * GPIO 34 → Batterie (diviseur de tension)
  */
 
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 
-// === CONFIGURATION ===
-const char* WIFI_SSID = "Votre_WiFi";
-const char* WIFI_PWD  = "Votre_MotDePasse";
-
-const char* SERVER_URL = "https://amused-passion-production.up.railway.app";
-const char* DEVICE_ID  = "SG001";
+// ========== CONFIGURATION UTILISATEUR ==========
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PWD  = "YOUR_WIFI_PASSWORD";
+const char* SERVER    = "amused-passion-production.up.railway.app";
+const char* DEVICE_ID = "SG001";
+// ===============================================
 
 // Pins
 const int BTN_PIN = 13;
 const int LED_PIN = 12;
-const int BATTERY_PIN = 34;   // Entrée analogique pour mesure batterie (diviseur de tension)
+const int BAT_PIN = 34;
 
-// Timing
-const unsigned long HEARTBEAT_INTERVAL = 30000;  // 30s
-const unsigned long SOS_HOLD_MS = 3000;           // 3s
-const unsigned long LED_BLINK_MS = 150;           // clignotement rapide
+const unsigned long HOLD_MS = 3000;
+const unsigned long HEARTBEAT_MS = 30000;
+const unsigned long BLINK_MS = 150;
 
-// === ÉTATS ===
-enum State {
-  IDLE,
-  COUNTDOWN,
-  SOS_CONFIRMED
-};
+enum State { IDLE, COUNTDOWN, SOS };
+State state = IDLE;
 
-State currentState = IDLE;
-unsigned long btnPressTime = 0;
-unsigned long lastHeartbeat = 0;
-unsigned long lastLedToggle = 0;
-bool ledState = false;
-bool lastBtnState = HIGH;
-bool sosSent = false;
+unsigned long btnTime = 0, lastBeat = 0, lastBlink = 0;
+bool ledOn = false, sosSent = false, lastBtn = HIGH;
 
-// === WiFi ===
-void connectWiFi() {
-  Serial.print("[WiFi] Connexion à ");
-  Serial.println(WIFI_SSID);
+// ========== WIFI ==========
+bool connectWiFi() {
+  Serial.printf("\n[WIFI] Connexion à \"%s\" ...\n", WIFI_SSID);
   WiFi.begin(WIFI_SSID, WIFI_PWD);
+
+  int attempts = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    if (++attempts > 40) { // 20 second timeout
+      Serial.println("\n[WIFI] ÉCHEC : pas de connexion après 20s");
+      Serial.println("[WIFI] Vérifie SSID et mot de passe !");
+      return false;
+    }
   }
-  Serial.println("\n[WiFi] Connecté ! IP: " + WiFi.localIP().toString());
+  Serial.printf("\n[WIFI] OK ! IP: %s\n", WiFi.localIP().toString().c_str());
+  return true;
 }
 
+// ========== BATTERIE ==========
 float readBattery() {
-  int raw = analogRead(BATTERY_PIN);
-  float voltage = raw * 3.3 / 4095.0;
-  float batteryPercent = constrain(map(voltage * 100, 330, 420, 0, 100), 0, 100);
-  return batteryPercent;
+  int raw = analogRead(BAT_PIN);
+  float v = raw * 3.3 / 4095.0;
+  return constrain(map(v * 100, 330, 420, 0, 100), 0, 100);
 }
 
-// === API HTTP ===
+// ========== API HTTPS ==========
 bool apiPost(const char* path, const char* body) {
+  Serial.printf("[HTTPS] POST %s%s\n  Body: %s\n", SERVER, path, body);
+
   WiFiClientSecure client;
   client.setInsecure();  // Accepte tous les certificats SSL
 
   HTTPClient http;
-  String url = String(SERVER_URL) + path;
-
-  http.begin(client, url);
-  http.addHeader("Content-Type", "application/json");
-
-  int code = http.POST(body);
-
-  if (code == 200 || code == 201) {
-    Serial.printf("[API] %s → %d OK\n", path, code);
-    http.end();
-    return true;
+  if (!http.begin(client, String("https://") + SERVER + path)) {
+    Serial.println("[HTTPS] ÉCHEC http.begin()");
+    return false;
   }
 
-  Serial.printf("[API] %s → %d ERREUR\n", path, code);
+  http.addHeader("Content-Type", "application/json");
+  http.setTimeout(15000);
+
+  int code = http.POST(body);
+  String response = http.getString();
   http.end();
+
+  Serial.printf("[HTTPS] Code: %d\n[HTTPS] Réponse: %s\n", code, response.c_str());
+
+  if (code > 0) return true;
+
+  Serial.printf("[HTTPS] ÉCHEC (code=%d). Causes possibles :\n", code);
+  Serial.println("  1. ESP32 ne résout pas le DNS (vérifie la connexion WiFi)");
+  Serial.println("  2. Le port 443 est bloqué par le réseau/firewall");
+  Serial.println("  3. Le certificat SSL est refusé");
   return false;
 }
 
 void sendHeartbeat() {
-  char body[64];
-  snprintf(body, sizeof(body),
-    "{\"deviceId\":\"%s\",\"battery\":%.0f}",
-    DEVICE_ID, readBattery());
+  char body[80];
+  snprintf(body, sizeof(body), "{\"deviceId\":\"%s\",\"battery\":%.0f}", DEVICE_ID, readBattery());
   apiPost("/api/esp32/heartbeat", body);
 }
 
@@ -119,117 +114,90 @@ void sendConfirmSos() {
   apiPost("/api/esp32/confirm-sos", body);
 }
 
-// === LED ===
-void setLed(bool on) {
-  digitalWrite(LED_PIN, on ? HIGH : LOW);
-}
-
-void blinkLed() {
+// ========== LED ==========
+void setLed(bool on) { digitalWrite(LED_PIN, on ? HIGH : LOW); }
+void blinkFast() {
   unsigned long now = millis();
-  if (now - lastLedToggle >= LED_BLINK_MS) {
-    ledState = !ledState;
-    setLed(ledState);
-    lastLedToggle = now;
-  }
+  if (now - lastBlink >= BLINK_MS) { ledOn = !ledOn; setLed(ledOn); lastBlink = now; }
 }
+void ledOff() { setLed(LOW); ledOn = false; }
 
-void sosLed() {
-  setLed(HIGH);
-}
-
-void ledOff() {
-  setLed(LOW);
-  ledState = false;
-}
-
-// === SETUP ===
+// ========== SETUP ==========
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n=== SafeGuardian CI - ESP32 ===");
+  delay(1000);
+  Serial.println("\n\n=== SafeGuardian CI - ESP32 ===");
+  Serial.printf("Device ID: %s\nServeur: %s\n\n", DEVICE_ID, SERVER);
 
   pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(LED_PIN, OUTPUT);
-  ledOff();
-
-  // Initialisation batterie (lecture analogique)
-  pinMode(BATTERY_PIN, INPUT);
+  pinMode(BAT_PIN, INPUT);
   analogReadResolution(12);
 
-  connectWiFi();
+  ledOff();
 
-  // Premier heartbeat
+  // Test de connexion WiFi
+  if (!connectWiFi()) {
+    Serial.println("\n=== REBOOT dans 10s ===");
+    delay(10000);
+    ESP.restart();
+    return;
+  }
+
+  // Test heartbeat au démarrage
+  Serial.println("\n--- Test API heartbeat ---");
   sendHeartbeat();
-  lastHeartbeat = millis();
+  lastBeat = millis();
+
+  Serial.println("\n=== Prêt. Appuie sur le bouton GPIO 13 pour tester ===");
 }
 
-// === LOOP ===
+// ========== LOOP ==========
 void loop() {
   unsigned long now = millis();
-  bool btnState = digitalRead(BTN_PIN);
+  bool btn = digitalRead(BTN_PIN);
 
-  switch (currentState) {
-    case IDLE: {
-      if (btnState == LOW && lastBtnState == HIGH) {
-        // Bouton vient d'être enfoncé
-        Serial.println("[BTN] Enfoncé → Début countdown 3s");
-        btnPressTime = now;
-        currentState = COUNTDOWN;
+  switch (state) {
+    case IDLE:
+      if (btn == LOW && lastBtn == HIGH) {
+        Serial.println("\n>>> Bouton ENFONCÉ - Attends 3s pour SOS...");
+        btnTime = now;
+        state = COUNTDOWN;
         sendButtonDown();
         sosSent = false;
       }
-
-      // Heartbeat périodique
-      if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+      if (now - lastBeat >= HEARTBEAT_MS) {
         sendHeartbeat();
-        lastHeartbeat = now;
+        lastBeat = now;
       }
       break;
-    }
 
-    case COUNTDOWN: {
-      if (btnState == HIGH) {
-        // Bouton relâché avant 3s → Annulation
-        unsigned long elapsed = now - btnPressTime;
-        Serial.printf("[BTN] Relâché après %lums → Annulation\n", elapsed);
+    case COUNTDOWN:
+      blinkFast();
+      if (btn == HIGH) {
+        Serial.printf(">>> Bouton RELÂCHÉ après %lums - Alerte annulée\n", now - btnTime);
         sendButtonUp();
         ledOff();
-        currentState = IDLE;
+        state = IDLE;
         break;
       }
-
-      // LED clignote rapidement
-      blinkLed();
-
-      // Vérifie si 3s sont passées
-      if (now - btnPressTime >= SOS_HOLD_MS && !sosSent) {
-        Serial.println("[SOS] 3s atteintes → CONFIRMATION SOS !");
+      if (now - btnTime >= HOLD_MS && !sosSent) {
+        Serial.println("\n*** 3s atteinte - SOS CONFIRMÉ ! ***");
         sendConfirmSos();
         sosSent = true;
-        currentState = SOS_CONFIRMED;
-        ledOff();
+        state = SOS;
       }
       break;
-    }
 
-    case SOS_CONFIRMED: {
-      // LED allumée fixe (SOS actif)
-      sosLed();
-
-      // Si bouton relâché après confirmation
-      if (btnState == HIGH && lastBtnState == LOW) {
-        Serial.println("[SOS] Bouton relâché (alerte déjà confirmée)");
-        sendButtonUp();
-      }
-
-      // Heartbeat pendant SOS
-      if (now - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+    case SOS:
+      setLed(HIGH);
+      if (now - lastBeat >= HEARTBEAT_MS) {
         sendHeartbeat();
-        lastHeartbeat = now;
+        lastBeat = now;
       }
       break;
-    }
   }
 
-  lastBtnState = btnState;
-  delay(10);  // Petite pause pour stabilité
+  lastBtn = btn;
+  delay(10);
 }
