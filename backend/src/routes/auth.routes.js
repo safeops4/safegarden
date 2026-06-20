@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const AuthController = require("../controllers/auth.controller");
-const { validate, required, isEmail, minLength } = require("../middleware/validate.middleware");
+const { validate, required, isEmail, minLength, optional } = require("../middleware/validate.middleware");
 
 const router = Router();
 
@@ -17,7 +17,6 @@ router.post(
 router.post(
   "/login",
   validate({
-    email: [required, isEmail],
     password: [required]
   }),
   AuthController.login

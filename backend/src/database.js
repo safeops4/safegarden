@@ -39,8 +39,6 @@ async function initDatabase() {
   try { db.run("ALTER TABLE users ADD COLUMN longitude REAL DEFAULT 0"); } catch(e) {}
   try { db.run("ALTER TABLE alerts ADD COLUMN latitude REAL DEFAULT 0"); } catch(e) {}
   try { db.run("ALTER TABLE alerts ADD COLUMN longitude REAL DEFAULT 0"); } catch(e) {}
-  try { db.run("ALTER TABLE device ADD COLUMN user_id INTEGER DEFAULT 0"); } catch(e) {}
-  try { db.run("ALTER TABLE device ADD COLUMN deactivated_until TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE lost_items ADD COLUMN user_id INTEGER DEFAULT 0"); } catch(e) {}
   try { db.run("ALTER TABLE lost_items ADD COLUMN photo TEXT DEFAULT ''"); } catch(e) {}
   try { db.run("ALTER TABLE lost_items ADD COLUMN qr_data TEXT DEFAULT ''"); } catch(e) {}
@@ -148,9 +146,13 @@ async function initDatabase() {
       battery INTEGER DEFAULT 100,
       latitude REAL DEFAULT 0,
       longitude REAL DEFAULT 0,
-      last_sync TEXT DEFAULT (datetime('now'))
+      last_sync TEXT DEFAULT (datetime('now')),
+      user_id INTEGER DEFAULT 0,
+      deactivated_until TEXT DEFAULT ''
     )
   `);
+  try { db.run("ALTER TABLE device ADD COLUMN user_id INTEGER DEFAULT 0"); } catch(e) {}
+  try { db.run("ALTER TABLE device ADD COLUMN deactivated_until TEXT DEFAULT ''"); } catch(e) {}
 
   saveDB();
   return db;

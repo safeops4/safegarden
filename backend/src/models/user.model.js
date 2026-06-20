@@ -35,6 +35,19 @@ const UserModel = {
     return row.id ? row : null;
   },
 
+  findByPhone(phone) {
+    const db = getDB();
+    const stmt = db.prepare("SELECT * FROM users WHERE phone = ?");
+    stmt.bind([phone]);
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      return row;
+    }
+    stmt.free();
+    return null;
+  },
+
   findByDeviceId(deviceId) {
     const db = getDB();
     const stmt = db.prepare("SELECT * FROM users WHERE device_id = ?");

@@ -104,7 +104,7 @@ const AlertController = {
 
   create(req, res) {
     const { message, status } = req.body;
-    const device = DeviceModel.get();
+    const device = DeviceModel.get() || { latitude: 0, longitude: 0 };
     const lat = device.latitude || 0;
     const lng = device.longitude || 0;
     const alert = AlertModel.create({

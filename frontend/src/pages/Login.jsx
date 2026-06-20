@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, Mail, Lock, LogIn, ArrowLeft } from "lucide-react";
+import { Shield, Mail, Lock, LogIn, ArrowLeft, Phone, AtSign } from "lucide-react";
 
 export default function Login({ onLogin, apiBaseUrl }) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const isEmail = identifier.includes("@");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -14,11 +15,15 @@ export default function Login({ onLogin, apiBaseUrl }) {
     setError("");
     setLoading(true);
 
+    const body = isEmail
+      ? { email: identifier, password }
+      : { phone: identifier, password };
+
     try {
       const response = await fetch(`${apiBaseUrl}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
@@ -26,7 +31,7 @@ export default function Login({ onLogin, apiBaseUrl }) {
         onLogin(data.user, data.token);
         navigate("/dashboard");
       } else {
-        setError(data.message || "Email ou mot de passe incorrect.");
+        setError(data.message || "Email/Téléphone ou mot de passe incorrect.");
       }
     } catch (err) {
       console.error(err);
@@ -104,21 +109,21 @@ export default function Login({ onLogin, apiBaseUrl }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Email field */}
+          {/* Email / Phone field */}
           <div className="form-group">
-            <label className="form-label" htmlFor="email-input">Adresse Email</label>
+            <label className="form-label" htmlFor="login-identifier">Email ou Téléphone</label>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
-                <Mail size={18} />
+                {isEmail ? <AtSign size={18} /> : <Phone size={18} />}
               </span>
               <input
-                id="email-input"
-                type="email"
+                id="login-identifier"
+                type="text"
                 className="form-control"
-                placeholder="nom@exemple.ci"
+                placeholder="nom@exemple.ci ou +225 07..."
                 style={{ paddingLeft: "2.75rem" }}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 required
                 disabled={loading}
               />

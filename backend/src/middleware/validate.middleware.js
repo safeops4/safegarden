@@ -1,42 +1,50 @@
-function validate(schema) {
-  return (req, res, next) => {
-    const errors = [];
-    for (const [field, rules] of Object.entries(schema)) {
+function required(value) {
+  if (!value || value.trim() === "") {
+    throw new Error("Ce champ est requis.");
+  }
+}
+
+function isEmail(value) {
+  if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw new Error("Format d'email invalide.");
+  }
+}
+
+function minLength(n) {
+  return function(value) {
+    if (value && value.length < n) {
+      throw new Error(`Minimum ${n} caractères.`);
+    }
+  };
+}
+
+function optional(fn) {
+  return function(value) {
+    if (value && value.trim() !== "") {
+      return fn(value);
+    }
+  };
+}
+
+function validate(rules) {
+  return function(req, res, next) {
+    const errors = {};
+    for (const [field, validators] of Object.entries(rules)) {
       const value = req.body[field];
-      for (const rule of rules) {
-        const error = rule(value, field);
-        if (error) {
-          errors.push(error);
-          break;
+      for (const validator of validators) {
+        try {
+          validator(value);
+        } catch (e) {
+          if (!errors[field]) errors[field] = [];
+          errors[field].push(e.message);
         }
       }
     }
-    if (errors.length > 0) {
-      return res.status(400).json({ success: false, message: errors.join("; ") });
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ success: false, errors });
     }
     next();
   };
 }
 
-const required = (value, field) => {
-  if (!value || (typeof value === "string" && !value.trim())) {
-    return `Le champ "${field}" est requis`;
-  }
-  return null;
-};
-
-const isEmail = (value, field) => {
-  if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    return `Le champ "${field}" doit être un email valide`;
-  }
-  return null;
-};
-
-const minLength = (min) => (value, field) => {
-  if (value && value.length < min) {
-    return `Le champ "${field}" doit contenir au moins ${min} caractères`;
-  }
-  return null;
-};
-
-module.exports = { validate, required, isEmail, minLength };
+module.exports = { validate, required, isEmail, minLength, optional };

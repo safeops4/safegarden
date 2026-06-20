@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, User, Mail, Lock, UserPlus, ArrowLeft } from "lucide-react";
+import { Shield, User, Mail, Lock, UserPlus, ArrowLeft, Phone } from "lucide-react";
 
 export default function Register({ apiBaseUrl }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [city, setCity] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -27,7 +29,7 @@ export default function Register({ apiBaseUrl }) {
       const response = await fetch(`${apiBaseUrl}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ name, email, password, phone, city })
       });
 
       const data = await response.json();
@@ -151,6 +153,26 @@ export default function Register({ apiBaseUrl }) {
             </div>
           </div>
 
+          {/* Phone field */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="register-phone-input">Numéro Téléphone</label>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
+                <Phone size={18} />
+              </span>
+              <input
+                id="register-phone-input"
+                type="tel"
+                className="form-control"
+                placeholder="+225 07 08 09 10 11"
+                style={{ paddingLeft: "2.75rem" }}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
           {/* Email field */}
           <div className="form-group">
             <label className="form-label" htmlFor="register-email-input">Adresse Email</label>
@@ -188,6 +210,26 @@ export default function Register({ apiBaseUrl }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* City field */}
+          <div className="form-group">
+            <label className="form-label" htmlFor="register-city-input">Ville / Commune</label>
+            <div style={{ position: "relative" }}>
+              <span style={{ position: "absolute", left: "1rem", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
+                <User size={18} />
+              </span>
+              <input
+                id="register-city-input"
+                type="text"
+                className="form-control"
+                placeholder="Ex: Abidjan, Yopougon"
+                style={{ paddingLeft: "2.75rem" }}
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
                 disabled={loading}
               />
             </div>

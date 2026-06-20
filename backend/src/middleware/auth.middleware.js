@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "safeguardian-dev-secret-change-in-production";
 
 function generateToken(user) {
-  return jwt.sign({ id: user.id, email: user.email, name: user.name }, JWT_SECRET, { expiresIn: "24h" });
+  return jwt.sign({ id: user.id, email: user.email, name: user.name, phone: user.phone || "" }, JWT_SECRET, { expiresIn: "24h" });
 }
 
 function verifyToken(req, res, next) {

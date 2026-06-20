@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Users, Plus, Phone, Mail, Trash2, ShieldAlert } from "lucide-react";
+import { Users, Plus, Phone, Mail, Trash2, ShieldAlert, Shield } from "lucide-react";
 import { api } from "../api";
 
 export default function Contacts({ apiBaseUrl }) {
@@ -71,6 +71,33 @@ export default function Contacts({ apiBaseUrl }) {
 
   return (
     <div className="page-wrapper">
+      {/* National emergency numbers */}
+      <div className="glass-panel" style={{ padding: "1.25rem", marginBottom: "2rem", background: "rgba(255, 45, 85, 0.05)", border: "1px solid rgba(255, 45, 85, 0.15)" }}>
+        <h3 style={{ margin: "0 0 1rem 0", fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Shield size={18} style={{ color: "var(--color-danger)" }} />
+          Numéros d'Urgence Nationaux (Côte d'Ivoire)
+        </h3>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+          {[
+            { label: "Police Secours", number: "111", color: "var(--color-danger)" },
+            { label: "Pompiers", number: "112", color: "var(--color-warning)" },
+            { label: "SAMU", number: "185", color: "var(--color-success)" },
+            { label: "Police Nationale", number: "170", color: "var(--color-primary)" },
+            { label: "Gendarmerie", number: "180", color: "var(--color-primary)" }
+          ].map((e, i) => (
+            <a key={i} href={`tel:${e.number}`} style={{
+              flex: "1 1 100px", padding: "0.6rem 1rem", borderRadius: "8px",
+              background: "rgba(255,255,255,0.04)", border: "1px solid var(--border-glass)",
+              textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.25rem",
+              transition: "all 0.3s ease"
+            }}>
+              <span style={{ fontSize: "1.2rem", fontWeight: 800, color: e.color }}>{e.number}</span>
+              <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>{e.label}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "2rem", flexWrap: "wrap", gap: "1rem" }}>
         <div>
           <h1 style={{ fontSize: "2rem", marginBottom: "0.25rem" }}>Contacts d'Urgence</h1>
