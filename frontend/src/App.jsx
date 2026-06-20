@@ -12,8 +12,12 @@ import Alerts from "./pages/Alerts";
 import Device from "./pages/Device";
 import LostItems from "./pages/LostItems";
 import LostDocuments from "./pages/LostDocuments";
+import FoundItems from "./pages/FoundItems";
+import FoundDocuments from "./pages/FoundDocuments";
+import PreciousItems from "./pages/PreciousItems";
 import Contacts from "./pages/Contacts";
 
+import AIChatbot from "./components/AIChatbot";
 import { api, API_BASE_URL } from "./api";
 
 function AppContent() {
@@ -234,11 +238,15 @@ function AppContent() {
           } />
           <Route path="/lost-items" element={<LostItems apiBaseUrl={API_BASE_URL} />} />
           <Route path="/lost-documents" element={<LostDocuments apiBaseUrl={API_BASE_URL} />} />
+          <Route path="/found-items" element={<FoundItems apiBaseUrl={API_BASE_URL} />} />
+          <Route path="/found-documents" element={<FoundDocuments apiBaseUrl={API_BASE_URL} />} />
+          <Route path="/precious-items" element={<PreciousItems apiBaseUrl={API_BASE_URL} />} />
           <Route path="/contacts" element={<Contacts apiBaseUrl={API_BASE_URL} />} />
 
           {/* Catch-all */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        {!isPublicPage && <AIChatbot />}
       </div>
     </div>
   );

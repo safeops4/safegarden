@@ -12,15 +12,15 @@
 #include <HTTPClient.h>
 
 // ========== CONFIGURATION UTILISATEUR ==========
-const char* WIFI_SSID = "YOUR_WIFI_SSID";
-const char* WIFI_PWD  = "YOUR_WIFI_PASSWORD";
+const char* WIFI_SSID = "MELLY_ELITEBOOK_9997";
+const char* WIFI_PWD  = "00000000";
 const char* SERVER    = "amused-passion-production.up.railway.app";
 const char* DEVICE_ID = "SG001";
 // ===============================================
 
 // Pins
-const int BTN_PIN = 13;
-const int LED_PIN = 12;
+const int BTN_PIN = 18;
+const int LED_PIN = 5;
 const int BAT_PIN = 34;
 
 const unsigned long HOLD_MS = 3000;

@@ -8,7 +8,10 @@ import {
   FileText, 
   Users,
   Settings,
-  HelpCircle
+  HelpCircle,
+  CircleDot,
+  Scan,
+  Diamond
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -17,7 +20,10 @@ export default function Sidebar() {
     { name: "Alertes SOS", path: "/alerts", icon: <AlertTriangle size={20} /> },
     { name: "Bracelet Connecté", path: "/device", icon: <Smartphone size={20} /> },
     { name: "Objets Perdus", path: "/lost-items", icon: <Package size={20} /> },
+    { name: "Objets Précieux", path: "/precious-items", icon: <Diamond size={20} /> },
+    { name: "Objets Retrouvés", path: "/found-items", icon: <CircleDot size={20} /> },
     { name: "Documents Perdus", path: "/lost-documents", icon: <FileText size={20} /> },
+    { name: "Documents Retrouvés", path: "/found-documents", icon: <Scan size={20} /> },
     { name: "Contacts Urgence", path: "/contacts", icon: <Users size={20} /> }
   ];
 

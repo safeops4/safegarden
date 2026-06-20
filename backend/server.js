@@ -12,6 +12,10 @@ const lostItemRoutes = require("./src/routes/lostItem.routes");
 const lostDocumentRoutes = require("./src/routes/lostDocument.routes");
 const contactRoutes = require("./src/routes/contact.routes");
 const deviceRoutes = require("./src/routes/device.routes");
+const foundItemRoutes = require("./src/routes/foundItem.routes");
+const foundDocumentRoutes = require("./src/routes/foundDocument.routes");
+const preciousItemRoutes = require("./src/routes/preciousItem.routes");
+const aiRoutes = require("./src/routes/ai.routes");
 
 const app = express();
 
@@ -29,6 +33,10 @@ app.use("/api/lost-items", lostItemRoutes);
 app.use("/api/lost-documents", lostDocumentRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/device", deviceRoutes);
+app.use("/api/found-items", foundItemRoutes);
+app.use("/api/found-documents", foundDocumentRoutes);
+app.use("/api/precious-items", preciousItemRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Serve frontend static files in production
 const staticDir = process.env.STATIC_DIR || path.join(__dirname, "..", "frontend", "dist");

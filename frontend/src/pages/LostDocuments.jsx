@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Plus, FileCheck, CheckCircle2, ShieldCheck } from "lucide-react";
+import { FileText, Plus, FileCheck, CheckCircle2, ShieldCheck, QrCode } from "lucide-react";
 import { api } from "../api";
 
 export default function LostDocuments({ apiBaseUrl }) {
@@ -163,6 +163,7 @@ export default function LostDocuments({ apiBaseUrl }) {
                   <th>Numéro / Réf</th>
                   <th>Date Signalement</th>
                   <th>État / Statut</th>
+                  <th>QR</th>
                 </tr>
               </thead>
               <tbody>
@@ -183,6 +184,14 @@ export default function LostDocuments({ apiBaseUrl }) {
                       <span className={`badge ${doc.status === "Vérifié" ? "badge-resolved" : "badge-info"}`}>
                         {doc.status}
                       </span>
+                    </td>
+                    <td>
+                      {doc.qr_data && (
+                        <button className="btn btn-secondary" style={{ padding: "0.3rem 0.6rem", fontSize: "0.75rem" }}
+                          onClick={() => { navigator.clipboard?.writeText(doc.qr_data); alert("QR Data copié !"); }}>
+                          <QrCode size={14} /> QR
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

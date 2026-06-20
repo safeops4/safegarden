@@ -73,7 +73,7 @@ describe("Protected Endpoints", () => {
       .get("/api/device")
       .set("Authorization", `Bearer ${token}`);
     expect(res.status).toBe(200);
-    expect(res.body.id).toBe("SG001");
+    expect(res.body.id).toMatch(/^SG\d{3}$/);
   });
 
   test("GET /api/alerts - with token", async () => {
@@ -208,5 +208,138 @@ describe("CRUD Endpoints", () => {
       .send({ battery: 50 });
     expect(res.status).toBe(200);
     expect(res.body.battery).toBe(50);
+  });
+
+  test("POST /api/found-items - create found item", async () => {
+    const res = await request(app)
+      .post("/api/found-items")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "iPhone trouvé", description: "iPhone 13 noir", location: "Commissariat Yopougon" });
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBeDefined();
+    expect(res.body.name).toBe("iPhone trouvé");
+  });
+
+  test("GET /api/found-items - list found items", async () => {
+    const res = await request(app)
+      .get("/api/found-items")
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+  });
+
+  test("POST /api/found-documents - create found document with owner match", async () => {
+    const res = await request(app)
+      .post("/api/found-documents")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ type: "CNI", ownerName: "Test User", number: "CI999999", location: "Mairie Cocody" });
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBeDefined();
+    expect(res.body.owner_name).toBe("Test User");
+    expect(res.body.ownerMatched).toBe(true);
+  });
+
+  test("GET /api/found-documents - list found documents", async () => {
+    const res = await request(app)
+      .get("/api/found-documents")
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+  });
+
+  test("POST /api/precious-items - CRUD", async () => {
+    const createRes = await request(app)
+      .post("/api/precious-items")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "MacBook Pro", description: "Apple M3 Max" });
+    expect(createRes.status).toBe(200);
+    expect(createRes.body.id).toBeDefined();
+    expect(createRes.body.qr_data).toBeDefined();
+
+    const listRes = await request(app)
+      .get("/api/precious-items")
+      .set("Authorization", `Bearer ${token}`);
+    expect(listRes.status).toBe(200);
+    expect(Array.isArray(listRes.body)).toBe(true);
+    expect(listRes.body.length).toBeGreaterThan(0);
+
+    const delRes = await request(app)
+      .delete(`/api/precious-items/${createRes.body.id}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(delRes.status).toBe(200);
+  });
+
+  test("POST /api/esp32/forced-removal - retrait forcé", async () => {
+    const res = await request(app)
+      .post("/api/esp32/forced-removal")
+      .send({ deviceId: "SG001" });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.alertId).toBeDefined();
+  });
+
+  test("POST /api/esp32/deactivate + activate", async () => {
+    const deactRes = await request(app)
+      .post("/api/esp32/deactivate")
+      .send({ deviceId: "SG001", hours: 2 });
+    expect(deactRes.status).toBe(200);
+    expect(deactRes.body.success).toBe(true);
+    expect(deactRes.body.deactivated_until).toBeDefined();
+
+    const actRes = await request(app)
+      .post("/api/esp32/activate")
+      .send({ deviceId: "SG001" });
+    expect(actRes.status).toBe(200);
+    expect(actRes.body.success).toBe(true);
+  });
+
+  test("GET /api/found-items/public - sans auth", async () => {
+    const res = await request(app).get("/api/found-items/public");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  test("GET /api/found-documents/public - sans auth", async () => {
+    const res = await request(app).get("/api/found-documents/public");
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+  });
+
+  test("GET /api/alerts/:id/export - export dossier", async () => {
+    const alertsRes = await request(app)
+      .get("/api/alerts")
+      .set("Authorization", `Bearer ${token}`);
+    const alertId = alertsRes.body[0]?.id;
+    expect(alertId).toBeDefined();
+    const res = await request(app)
+      .get(`/api/alerts/${alertId}/export`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.alert).toBeDefined();
+    expect(res.body.victim).toBeDefined();
+    expect(res.body.timeline).toBeDefined();
+  });
+
+  test("GET /api/alerts/:id - get alert with positions", async () => {
+    const alertsRes = await request(app)
+      .get("/api/alerts")
+      .set("Authorization", `Bearer ${token}`);
+    const alertId = alertsRes.body[0]?.id;
+    expect(alertId).toBeDefined();
+    const res = await request(app)
+      .get(`/api/alerts/${alertId}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.positions).toBeDefined();
+  });
+
+  test("POST /api/esp32/heartbeat - with position tracking", async () => {
+    const res = await request(app)
+      .post("/api/esp32/heartbeat")
+      .send({ deviceId: "SG001", battery: 90, latitude: 5.35, longitude: -3.98 });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
   });
 });

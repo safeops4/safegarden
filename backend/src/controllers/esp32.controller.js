@@ -1,21 +1,31 @@
 const AlertModel = require("../models/alert.model");
 const DeviceModel = require("../models/device.model");
+const UserModel = require("../models/user.model");
+const AlertPositionModel = require("../models/alertPosition.model");
 const { scheduleEscalation } = require("./alert.controller");
 
 const activeAlerts = {};
 
 const Esp32Controller = {
   heartbeat(req, res) {
-    const { deviceId, battery } = req.body;
+    const { deviceId, battery, latitude, longitude } = req.body;
     if (!deviceId) {
       return res.status(400).json({ success: false, message: "deviceId requis" });
     }
     DeviceModel.update({
       status: "Connecté",
       battery: battery || 100,
+      latitude: latitude || undefined,
+      longitude: longitude || undefined,
       last_sync: new Date().toISOString()
-    });
+    }, deviceId);
+
     const alertActive = !!activeAlerts[deviceId];
+    if (alertActive && latitude && longitude) {
+      const session = activeAlerts[deviceId];
+      AlertPositionModel.create(session.alertId, latitude, longitude);
+    }
+
     res.json({ success: true, status: alertActive ? "ALERT_ACTIVE" : "IDLE" });
   },
 
@@ -24,11 +34,16 @@ const Esp32Controller = {
     if (!deviceId) {
       return res.status(400).json({ success: false, message: "deviceId requis" });
     }
-    const device = DeviceModel.get();
+    const device = DeviceModel.get(deviceId);
+    if (!device) {
+      return res.status(404).json({ success: false, message: "Aucun appareil trouvé avec cet ID" });
+    }
 
+    const user = UserModel.findByDeviceId(deviceId);
     const alert = AlertModel.create({
       id: "alert-" + Date.now(),
-      user: deviceId,
+      user: user ? user.name : deviceId,
+      user_id: user ? user.id : 0,
       esp32_id: deviceId,
       location: `Abidjan (${device.latitude}, ${device.longitude})`,
       status: "PENDING",
@@ -36,7 +51,7 @@ const Esp32Controller = {
       date: new Date().toISOString()
     });
 
-    DeviceModel.update({ status: "ALERTE PENDING" });
+    DeviceModel.update({ status: "ALERTE PENDING" }, deviceId);
 
     activeAlerts[deviceId] = {
       alertId: alert.id,
@@ -66,7 +81,7 @@ const Esp32Controller = {
 
     if (!wasConfirmed) {
       AlertModel.resolve(session.alertId);
-      DeviceModel.update({ status: "Connecté" });
+      DeviceModel.update({ status: "Connecté" }, deviceId);
       return res.json({
         success: true,
         confirmed: false,
@@ -98,9 +113,9 @@ const Esp32Controller = {
       AlertModel.escalate(session.alertId, {
         time: new Date().toISOString(),
         stage: "CONFIRMED",
-        appendMessage: " | ✅ SOS CONFIRMÉ après maintien 3s. Escamotage des secours en cours."
+        appendMessage: " | ✅ SOS CONFIRMÉ après maintien 3s. Police + commissariats notifiés."
       });
-      DeviceModel.update({ status: "ALERTE SOS" });
+      DeviceModel.update({ status: "ALERTE SOS" }, deviceId);
     }
 
     scheduleEscalation(session.alertId, deviceId);
@@ -108,7 +123,7 @@ const Esp32Controller = {
     res.json({
       success: true,
       alertId: session.alertId,
-      message: "SOS confirmé. Escamotage des secours démarré."
+      message: "SOS confirmé. Police et commissariats alertés."
     });
   },
 
@@ -128,6 +143,53 @@ const Esp32Controller = {
       success: true,
       message: "Signal reçu, escalade démarrée"
     });
+  },
+
+  forcedRemoval(req, res) {
+    const { deviceId } = req.body;
+    if (!deviceId) {
+      return res.status(400).json({ success: false, message: "deviceId requis" });
+    }
+    const device = DeviceModel.get(deviceId);
+    const user = UserModel.findByDeviceId(deviceId);
+    const alert = AlertModel.create({
+      id: "alert-" + Date.now(),
+      user: user ? user.name : deviceId,
+      user_id: user ? user.id : 0,
+      esp32_id: deviceId,
+      location: device ? `Abidjan (${device.latitude}, ${device.longitude})` : "Inconnue",
+      status: "URGENT",
+      message: "⚠️ RETRAIT FORCÉ du bracelet détecté ! Alerte immédiate.",
+      date: new Date().toISOString()
+    });
+    DeviceModel.update({ status: "ALERTE RETRAIT FORCÉ" }, deviceId);
+    scheduleEscalation(alert.id, deviceId);
+    res.json({
+      success: true,
+      alertId: alert.id,
+      message: "Retrait forcé détecté. Secours alertés."
+    });
+  },
+
+  deactivate(req, res) {
+    const { deviceId, hours } = req.body;
+    if (!deviceId) {
+      return res.status(400).json({ success: false, message: "deviceId requis" });
+    }
+    const duration = Math.min(Math.max(parseInt(hours) || 8, 1), 24);
+    const until = new Date(Date.now() + duration * 3600000).toISOString();
+    DeviceModel.update({ status: "DÉSACTIVÉ", deactivated_until: until }, deviceId);
+    console.log(`[DEACTIVATE] ${deviceId} désactivé jusqu'à ${until}`);
+    res.json({ success: true, deactivated_until: until, message: `Bracelet désactivé pour ${duration}h.` });
+  },
+
+  activate(req, res) {
+    const { deviceId } = req.body;
+    if (!deviceId) {
+      return res.status(400).json({ success: false, message: "deviceId requis" });
+    }
+    DeviceModel.update({ status: "Connecté", deactivated_until: "" }, deviceId);
+    res.json({ success: true, message: "Bracelet réactivé." });
   }
 };
 

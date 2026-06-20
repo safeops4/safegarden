@@ -7,7 +7,10 @@ import {
   RefreshCw, 
   ShieldAlert,
   Send,
-  Zap
+  Zap,
+  Moon,
+  Sun,
+  Clock
 } from "lucide-react";
 import DeviceStatus from "../components/DeviceStatus";
 import { api } from "../api";
@@ -24,6 +27,7 @@ export default function Device({ device, onUpdateCoordinates, apiBaseUrl, fetchD
   const [customLat, setCustomLat] = useState("");
   const [customLng, setCustomLng] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deactHours, setDeactHours] = useState(8);
 
   if (!device) return null;
 
@@ -127,6 +131,55 @@ export default function Device({ device, onUpdateCoordinates, apiBaseUrl, fetchD
                 Plein (100%)
               </button>
             </div>
+          </div>
+
+          {/* Mode Désactivation (Sleep Mode) */}
+          <div className="glass-panel" style={{
+            padding: "1.5rem",
+            border: device.deactivatedUntil ? "1px solid rgba(255, 193, 7, 0.3)" : "1px solid var(--border-glass)"
+          }}>
+            <h3 style={{ margin: "0 0 1.25rem 0", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              {device.deactivatedUntil ? (
+                <Moon size={18} style={{ color: "var(--color-warning)" }} />
+              ) : (
+                <Sun size={18} style={{ color: "var(--color-warning)" }} />
+              )}
+              Mode Désactivation (Sommeil)
+            </h3>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
+              Désactivez le bracelet pour dormir, vous doucher ou faire du sport. Il ne déclenchera pas d'alerte pendant cette période.
+            </p>
+            {device.deactivatedUntil ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem", color: "var(--color-warning)" }}>
+                  <Clock size={16} />
+                  Désactivé jusqu'au {new Date(device.deactivatedUntil).toLocaleString("fr-FR")}
+                </div>
+                <button onClick={async () => {
+                  try {
+                    const res = await api("/esp32/activate", { method: "POST", body: JSON.stringify({ deviceId: device.id }) });
+                    if (res.ok) fetchData();
+                  } catch(e) { console.error(e); }
+                }} className="btn btn-success" style={{ width: "100%" }}>
+                  <Sun size={16} /> Réactiver le bracelet
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem" }}>
+                  <input type="number" min="1" max="24" className="form-control" style={{ width: "100px" }} value={deactHours} onChange={(e) => setDeactHours(e.target.value)} />
+                  <span style={{ display: "flex", alignItems: "center", color: "var(--text-secondary)", fontSize: "0.9rem" }}>heures</span>
+                </div>
+                <button onClick={async () => {
+                  try {
+                    const res = await api("/esp32/deactivate", { method: "POST", body: JSON.stringify({ deviceId: device.id, hours: deactHours }) });
+                    if (res.ok) fetchData();
+                  } catch(e) { console.error(e); }
+                }} className="btn btn-warning" style={{ width: "100%" }}>
+                  <Moon size={16} /> Désactiver pour {deactHours}h
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

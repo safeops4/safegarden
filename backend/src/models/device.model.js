@@ -1,47 +1,54 @@
 const { getDB, saveDB } = require("../database");
 
-const DEFAULT_DEVICE = {
-  id: "SG001",
-  status: "Connecté",
-  battery: 89,
-  latitude: 5.3484,
-  longitude: -3.9774,
-  last_sync: new Date().toISOString()
-};
-
 const DeviceModel = {
-  get() {
+  get(deviceId) {
     const db = getDB();
-    const stmt = db.prepare("SELECT * FROM device WHERE id = 'SG001'");
+    const id = deviceId || "SG001";
+    const stmt = db.prepare("SELECT * FROM device WHERE id = ?");
+    stmt.bind([id]);
     if (stmt.step()) {
       const row = stmt.getAsObject();
       stmt.free();
       return transform(row);
     }
     stmt.free();
-    this.seed();
-    return DEFAULT_DEVICE;
+    return null;
   },
 
-  update(data) {
+  getByUserId(userId) {
     const db = getDB();
-    const current = this.get();
+    const stmt = db.prepare("SELECT * FROM device WHERE user_id = ?");
+    stmt.bind([userId]);
+    if (stmt.step()) {
+      const row = stmt.getAsObject();
+      stmt.free();
+      return transform(row);
+    }
+    stmt.free();
+    return null;
+  },
+
+  update(data, deviceId) {
+    const db = getDB();
+    const id = deviceId || "SG001";
+    const current = this.get(id);
+    if (!current) return null;
     const merged = { ...current, ...data, last_sync: new Date().toISOString() };
-    db.run(
-      `UPDATE device SET status = ?, battery = ?, latitude = ?, longitude = ?, last_sync = ? WHERE id = ?`,
-      [merged.status, merged.battery, merged.latitude, merged.longitude, merged.last_sync, "SG001"]
-    );
-    saveDB();
-    return this.get();
-  },
 
-  seed() {
-    const db = getDB();
-    db.run(
-      "INSERT OR IGNORE INTO device (id, status, battery, latitude, longitude, last_sync) VALUES (?, ?, ?, ?, ?, ?)",
-      [DEFAULT_DEVICE.id, DEFAULT_DEVICE.status, DEFAULT_DEVICE.battery, DEFAULT_DEVICE.latitude, DEFAULT_DEVICE.longitude, DEFAULT_DEVICE.last_sync]
-    );
-    saveDB();
+    const fields = [];
+    const values = [];
+    for (const key of ["status", "battery", "latitude", "longitude", "last_sync", "deactivated_until"]) {
+      if (merged[key] !== undefined) {
+        fields.push(`${key} = ?`);
+        values.push(merged[key]);
+      }
+    }
+    if (fields.length > 0) {
+      values.push(id);
+      db.run(`UPDATE device SET ${fields.join(", ")} WHERE id = ?`, values);
+      saveDB();
+    }
+    return this.get(id);
   }
 };
 
@@ -52,7 +59,9 @@ function transform(row) {
     battery: row.battery,
     latitude: row.latitude,
     longitude: row.longitude,
-    lastSync: row.last_sync
+    lastSync: row.last_sync,
+    userId: row.user_id,
+    deactivatedUntil: row.deactivated_until || ""
   };
 }
 

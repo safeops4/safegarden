@@ -10,7 +10,7 @@ const AuthController = {
     }
     const user = UserModel.create(email, password, name, phone, city);
     const token = generateToken(user);
-    res.json({ success: true, user: { id: user.id, email: user.email, name: user.name }, token, message: "Inscription réussie." });
+    res.json({ success: true, user: { id: user.id, email: user.email, name: user.name, deviceId: user.device_id }, token, message: "Inscription réussie." });
   },
 
   login(req, res) {
@@ -22,7 +22,7 @@ const AuthController = {
     const token = generateToken(user);
     res.json({
       success: true,
-      user: { email: user.email, name: user.name },
+      user: { id: user.id, email: user.email, name: user.name, deviceId: user.device_id },
       token,
       message: "Connexion réussie"
     });

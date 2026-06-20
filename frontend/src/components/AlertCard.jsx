@@ -1,10 +1,29 @@
 import React from "react";
-import { AlertOctagon, CheckCircle, MapPin, Calendar, Check } from "lucide-react";
+import { AlertOctagon, CheckCircle, MapPin, Calendar, Check, FileDown, Crosshair } from "lucide-react";
+import { api } from "../api";
 
 export default function AlertCard({ alert, onResolve }) {
   const isUrgent = alert.status === "URGENT";
   const dateStr = new Date(alert.date).toLocaleDateString("fr-FR");
   const timeStr = new Date(alert.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  const handleExport = async () => {
+    try {
+      const res = await api(`/alerts/${alert.id}/export`);
+      if (res.ok) {
+        const dossier = await res.json();
+        const blob = new Blob([JSON.stringify(dossier, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `dossier-alerte-${alert.id}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error("Export failed", e);
+    }
+  };
 
   return (
     <div 
@@ -42,16 +61,26 @@ export default function AlertCard({ alert, onResolve }) {
           </span>
         </div>
         
-        {isUrgent && onResolve && (
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {isUrgent && onResolve && (
+            <button 
+              className="btn btn-success"
+              style={{ padding: "0.5rem 1rem", fontSize: "0.85rem", height: "36px" }}
+              onClick={() => onResolve(alert.id)}
+            >
+              <Check size={16} />
+              Résoudre
+            </button>
+          )}
           <button 
-            className="btn btn-success"
+            className="btn btn-secondary"
             style={{ padding: "0.5rem 1rem", fontSize: "0.85rem", height: "36px" }}
-            onClick={() => onResolve(alert.id)}
+            onClick={handleExport}
           >
-            <Check size={16} />
-            Marquer Résolu
+            <FileDown size={16} />
+            Dossier
           </button>
-        )}
+        </div>
       </div>
 
       <div style={{

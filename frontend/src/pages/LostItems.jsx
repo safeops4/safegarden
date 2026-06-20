@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Package, Search, Plus, Calendar, Tag, CheckCircle, Info } from "lucide-react";
+import { Package, Search, Plus, Calendar, Tag, CheckCircle, Info, QrCode } from "lucide-react";
 import { api } from "../api";
 
 export default function LostItems({ apiBaseUrl }) {
@@ -142,6 +142,7 @@ export default function LostItems({ apiBaseUrl }) {
                   <th>Description</th>
                   <th>Date Déclaration</th>
                   <th>Statut</th>
+                  <th>QR</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,6 +162,14 @@ export default function LostItems({ apiBaseUrl }) {
                       <span className={`badge ${item.status === "Retrouvé" ? "badge-resolved" : "badge-warning"}`}>
                         {item.status}
                       </span>
+                    </td>
+                    <td>
+                      {item.qr_data && (
+                        <button className="btn btn-secondary" style={{ padding: "0.3rem 0.6rem", fontSize: "0.75rem" }}
+                          onClick={() => { navigator.clipboard?.writeText(item.qr_data); alert("QR Data copié !"); }}>
+                          <QrCode size={14} /> QR
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

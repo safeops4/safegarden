@@ -28,10 +28,10 @@ const AlertModel = {
 
   create(data) {
     const db = getDB();
-    const { id, user, location, status, message, date } = data;
+    const { id, user, location, status, message, date, user_id, esp32_id, latitude, longitude } = data;
     db.run(
-      "INSERT INTO alerts (id, user, location, status, message, date) VALUES (?, ?, ?, ?, ?, ?)",
-      [id, user, location, status || "URGENT", message, date]
+      "INSERT INTO alerts (id, user, location, status, message, date, user_id, esp32_id, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [id, user, location, status || "URGENT", message, date, user_id || 0, esp32_id || "", latitude || 0, longitude || 0]
     );
     saveDB();
     return this.getById(id);
@@ -85,7 +85,11 @@ function transform(row) {
     message: row.message,
     escalated: !!row.escalated,
     escalationTime: row.escalation_time,
-    date: row.date
+    date: row.date,
+    latitude: row.latitude || 0,
+    longitude: row.longitude || 0,
+    userId: row.user_id,
+    esp32Id: row.esp32_id
   };
 }
 

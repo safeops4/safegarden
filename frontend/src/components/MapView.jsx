@@ -1,7 +1,7 @@
 import React from "react";
 import { MapPin, Compass, ShieldAlert, Crosshair } from "lucide-react";
 
-export default function MapView({ device, activeAlerts = [], onMapClick }) {
+export default function MapView({ device, activeAlerts = [], onMapClick, positions = [] }) {
   const isSOS = device?.status === "ALERTE SOS" || activeAlerts.length > 0;
   
   // Map dimensions
@@ -113,6 +113,26 @@ export default function MapView({ device, activeAlerts = [], onMapClick }) {
               <circle cx={x} cy={y} r="45" fill="none" stroke="var(--color-danger)" strokeWidth="1.5" opacity="0.3" className="pulse-sos" />
               <circle cx={x} cy={y} r="25" fill="none" stroke="var(--color-danger)" strokeWidth="2" opacity="0.5" className="pulse-sos" />
             </>
+          )}
+
+          {/* Alert Tracking Positions */}
+          {positions.length > 0 && positions.map((pos, i) => {
+            const p = getXY(pos.latitude, pos.longitude);
+            return (
+              <circle key={i} cx={p.x} cy={p.y} r="3" fill="rgba(255, 179, 0, 0.6)" stroke="rgba(255, 179, 0, 0.3)" strokeWidth="1" />
+            );
+          })}
+          {positions.length > 1 && (
+            <polyline
+              points={positions.map(p => {
+                const pt = getXY(p.latitude, p.longitude);
+                return `${pt.x},${pt.y}`;
+              }).join(" ")}
+              fill="none"
+              stroke="rgba(255, 179, 0, 0.3)"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+            />
           )}
 
           {/* Device Location Pointer */}
